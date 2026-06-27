@@ -261,7 +261,16 @@
   let mySendCount = 0;
   let nextReplyAt = 0;
 
+  // 送信者だけは保存状態に左右されないよう、毎回「自分」を初期値にする
+  localStorage.removeItem('lineChatSender');
+  localStorage.removeItem('sender');
+  try {
+    const oldV1 = JSON.parse(localStorage.getItem('lineChatApp') || '{}');
+    if(oldV1.sender){ delete oldV1.sender; localStorage.setItem('lineChatApp', JSON.stringify(oldV1)); }
+  } catch(e) {}
+
   const saved = JSON.parse(localStorage.getItem('lineChatAppV2') || '{}');
+  if(saved.sender){ delete saved.sender; localStorage.setItem('lineChatAppV2', JSON.stringify(saved)); }
   if(saved.name){ nameInput.value = saved.name; displayName.textContent = saved.name; }
   if(saved.dark === false){ document.body.classList.remove('dark'); darkMode.checked = false; } else { document.body.classList.add('dark'); darkMode.checked = true; }
   if(saved.bg){ document.documentElement.style.setProperty('--bg', saved.bg); bgColor.value = saved.bg; }
@@ -556,6 +565,8 @@
 
   setSender('me');
   updateComposerState();
+  window.addEventListener('pageshow', () => setSender('me'));
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) setSender('me'); });
 
   addMessage('こんにちは！ここをタップすると編集できます。', 'other', new Date());
   addMessage('自分のメッセージは即既読になります。', 'me', new Date());
