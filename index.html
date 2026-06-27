@@ -321,6 +321,7 @@
   }
 
   function loadChat(){
+    isLoadingChat = true;
     const messages = safeJson(localStorage.getItem(CHAT_KEY), null);
     chat.innerHTML = '';
     lastDateKey = '';
@@ -329,8 +330,9 @@
     }else{
       addMessage('こんにちは！ここをタップすると編集できます。', 'other', new Date(), false);
       addMessage('自分のメッセージは即既読になります。', 'me', new Date(), false);
-      saveChat();
     }
+    isLoadingChat = false;
+    saveChat();
     chat.scrollTop = chat.scrollHeight;
   }
 
@@ -457,8 +459,6 @@
     modeLine.classList.remove('show');
     setSender('me');
     updateComposerState();
-    // 送信後にtextareaへフォーカスを戻す（連続入力できるように）
-    requestAnimationFrame(() => msg.focus());
   }
 
   function enableLongPressDrag(row){
@@ -580,13 +580,17 @@
   function handleSendButton(e){
     if(e){ e.preventDefault(); e.stopPropagation(); }
     const now = Date.now();
-    if(now - lastSendAt < 250) return;
+    if(now - lastSendAt < 400) return;
     lastSendAt = now;
     sendMsg();
   }
-  send.addEventListener('click', handleSendButton);
-  send.addEventListener('pointerup', handleSendButton);
+  // touchend のみに絞る（pointerup/clickと重複してsendMsgが複数回走るのを防ぐ）
   send.addEventListener('touchend', handleSendButton, {passive:false});
+  // タッチ非対応環境（PC）用にclickも残す
+  send.addEventListener('click', (e) => {
+    if(e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+    handleSendButton(e);
+  });
   msg.addEventListener('keydown', e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(); }});
   msg.addEventListener('input', () => { msg.style.height='24px'; msg.style.height = Math.min(msg.scrollHeight,96)+'px'; updateComposerState(); });
 
@@ -624,26 +628,8 @@
     }
   };
 
-  // トーク履歴を確実に保存するため、DOM変更も監視する
+  // MutationObserverは使わず、必要な箇所で明示的にsaveChatを呼ぶ
   let isLoadingChat = false;
-  let saveTimer = null;
-  function queueSaveChat(){
-    if(isLoadingChat) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveChat, 80);
-  }
-  const originalLoadChat = loadChat;
-  loadChat = function(){
-    isLoadingChat = true;
-    try { originalLoadChat(); }
-    finally {
-      isLoadingChat = false;
-      setTimeout(saveChat, 0);
-    }
-  };
-  new MutationObserver(queueSaveChat).observe(chat, {
-    childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:['data-time','data-who','data-date-key']
-  });
 
   setSender('me');
   updateComposerState();
