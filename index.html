@@ -283,6 +283,14 @@
       replyMax:replyMax.value
     }));
   }
+
+  function setSender(who){
+    sender = who === 'other' ? 'other' : 'me';
+    asMe.classList.toggle('active', sender === 'me');
+    asOther.classList.toggle('active', sender === 'other');
+  }
+  setSender('me');
+
   function replyList(){
     return replyWords.value.split(/\n+/).map(v => v.trim()).filter(Boolean);
   }
@@ -363,12 +371,14 @@
   function sendMsg(){
     const text = msg.value.trim();
     if(!text) return;
-    addMessage(text, sender);
-    maybeAutoReply(sender);
+    const who = (sender === 'other') ? 'other' : 'me';
+    addMessage(text, who);
+    maybeAutoReply(who);
     msg.value = '';
     msg.style.height = '24px';
     modeLine.classList.remove('show');
-    updateComposerState();
+    setSender('me');
+  updateComposerState();
   }
 
 
@@ -531,8 +541,8 @@
   chat.addEventListener('click', () => { editingMessage = null; editPanel.classList.remove('show'); });
   document.getElementById('modeToggle').onclick = () => { modeLine.classList.toggle('show'); };
   expandTools.onclick = () => { modeLine.classList.toggle('show'); };
-  asOther.onclick = () => { sender='other'; asOther.classList.add('active'); asMe.classList.remove('active'); modeLine.classList.remove('show'); };
-  asMe.onclick = () => { sender='me'; asMe.classList.add('active'); asOther.classList.remove('active'); modeLine.classList.remove('show'); };
+  asOther.onclick = () => { setSender('other'); modeLine.classList.remove('show'); };
+  asMe.onclick = () => { setSender('me'); modeLine.classList.remove('show'); };
   nameInput.addEventListener('input', () => { displayName.textContent = nameInput.value || '相手の名前'; save(); });
   darkMode.addEventListener('change', () => { document.body.classList.toggle('dark', darkMode.checked); save(); });
   bgColor.addEventListener('input', () => { document.documentElement.style.setProperty('--bg', bgColor.value); save(); });
@@ -544,6 +554,7 @@
   });
   document.getElementById('clearChat').onclick = () => { if(confirm('トークを全削除しますか？')){ chat.innerHTML=''; lastDateKey=''; } };
 
+  setSender('me');
   updateComposerState();
 
   addMessage('こんにちは！ここをタップすると編集できます。', 'other', new Date());
