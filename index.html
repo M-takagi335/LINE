@@ -431,9 +431,11 @@
     bubble.addEventListener('click', (e) => {
       e.stopPropagation();
       if(suppressNextClick){ suppressNextClick = false; return; }
+      // フォーカスをtextareaから奪わないようにblurしてからeditPanel開く
+      bubble.blur();
       openEditPanel(row);
     });
-    bubble.addEventListener('focus', () => { if(!dragState) openEditPanel(row); });
+    // focus単体ではeditPanelを開かない（textareaフォーカスを奪う原因になるため削除）
     bubble.addEventListener('input', saveChat);
     bubble.addEventListener('blur', saveChat);
     enableLongPressDrag(row);
@@ -455,6 +457,8 @@
     modeLine.classList.remove('show');
     setSender('me');
     updateComposerState();
+    // 送信後にtextareaへフォーカスを戻す（連続入力できるように）
+    requestAnimationFrame(() => msg.focus());
   }
 
   function enableLongPressDrag(row){
